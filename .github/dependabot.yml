@@ -1,0 +1,16 @@
+# Mantiene las dependencias al día solas, con un chequeo semanal.
+# Misma configuración que SecureProxy y SecureDNS.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"

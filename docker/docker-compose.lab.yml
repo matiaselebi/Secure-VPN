@@ -1,0 +1,40 @@
+# Laboratorio local: el "VPS de mentira" contra el que se prueba todo el
+# flujo (aprovisionar por SSH, conectar, handshake, kill switch) sin gastar
+# un peso ni depender de internet. Cuando haya un VPS real, este archivo
+# deja de hacer falta: solo cambian las IPs en config/config.yaml.
+#
+# Levantar/bajar: opciones del panel SecureVPN.bat, o a mano:
+#   python scripts/lab_up.py   /   python scripts/lab_down.py
+
+services:
+  securevpn-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile.lab
+    container_name: securevpn-lab
+    # NET_ADMIN + /dev/net/tun: lo mínimo para que el contenedor pueda crear
+    # su interfaz WireGuard (con el módulo del kernel si existe, o con
+    # wireguard-go en espacio de usuario si no).
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    # DNS propio del contenedor, fijo y explícito. Sin esto, Docker le pasa a
+    # su máquina virtual el DNS del host; y si SecureDNS está encendido, ese
+    # DNS es 127.0.0.1... que dentro de la VM apunta a la VM misma, no a tu
+    # PC. Resultado: el contenedor se queda sin resolución de nombres y la
+    # instalación de paquetes se cuelga esperando timeouts. Fijando el DNS
+    # acá, el laboratorio resuelve por su cuenta y deja de depender de cómo
+    # esté configurado el DNS de Windows en ese momento.
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
+    ports:
+      # Solo en 127.0.0.1: el laboratorio no se expone a tu red local.
+      - "127.0.0.1:2222:22"
+      - "127.0.0.1:51820:51820/udp"
+    volumes:
+      # La clave pública del laboratorio (generada por lab_up.py) entra como
+      # authorized_keys: el aprovisionamiento entra por SSH sin contraseña.
+      - ../data/lab_ssh_key.pub:/root/.ssh/authorized_keys:ro
+    restart: unless-stopped

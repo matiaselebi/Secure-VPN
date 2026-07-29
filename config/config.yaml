@@ -1,0 +1,85 @@
+server:
+  # La otra punta del túnel. Para el laboratorio Docker local es 127.0.0.1;
+  # el día que tengas un VPS real, poné acá su IP pública y nada más.
+  endpoint_host: "127.0.0.1"
+  endpoint_port: 51820
+  # Por dónde entra el aprovisionamiento (SSH). En el laboratorio, el
+  # contenedor publica su SSH en el puerto 2222; en un VPS real suele ser 22.
+  ssh_host: "127.0.0.1"
+  ssh_port: 2222
+  ssh_user: "root"
+  # Clave SSH que usa el aprovisionamiento. La del laboratorio se genera sola
+  # con la opción del panel; para un VPS real apuntá a tu clave de siempre.
+  ssh_key_path: "data/lab_ssh_key"
+  # Interfaz de red pública del servidor, para la regla de NAT (la que tiene
+  # la IP de internet: "eth0" en la mayoría de los VPS y en el laboratorio).
+  public_interface: "eth0"
+
+tunnel:
+  # Nombre de la interfaz/túnel en ambos extremos y del archivo .conf.
+  interface_name: "securevpn"
+  # "full"  = todo el tráfico de la PC entra al túnel (recomendado).
+  #           La red local (impresora, etc.) sigue andando: sus rutas son más
+  #           específicas que la ruta del túnel y ganan solas.
+  # "split" = SOLO lo listado en split_allowed_ips entra al túnel; el resto
+  #           sale directo como siempre.
+  mode: "full"
+  split_allowed_ips:
+    - "10.66.66.0/24"
+    - "fd42:4242:4242::/64"
+  # Red interna del túnel (no tiene que existir en tu casa: es privada del
+  # túnel). El servidor toma la primera IP (.1) y los peers las siguientes.
+  # network_v6 en "" desactiva IPv6 dentro del túnel.
+  #
+  # Viene vacío a propósito mientras se use el LABORATORIO: Docker Desktop en
+  # Windows crea los contenedores SIN IPv6, así que el servidor no puede
+  # tomar una dirección v6 y el túnel terminaría anunciando un IPv6 que no
+  # lleva a ningún lado. Con IPv4 solo anda todo igual (los sitios con doble
+  # stack caen a IPv4 por su cuenta).
+  # Contra un VPS real con IPv6, poné acá "fd42:4242:4242::/64" y volvé a
+  # aprovisionar: el túnel pasa a doble stack.
+  network_v4: "10.66.66.0/24"
+  network_v6: ""
+  # Cada cuántos segundos el cliente manda un paquetito para mantener vivo el
+  # túnel a través de NAT/routers hogareños.
+  keepalive_seconds: 25
+
+dns:
+  # true: el túnel usa tu SecureDNS local como resolver (si está corriendo).
+  # Si SecureDNS no responde al momento de conectar, se usa fallback_dns para
+  # no dejarte sin resolución de nombres.
+  use_securedns: true
+  securedns_ip: "127.0.0.1"
+  # Cómo se comprueba que SecureDNS esté vivo: su dashboard responde un
+  # número en /cache-count. Si cambiaste el puerto del dashboard de
+  # SecureDNS, actualizalo también acá.
+  securedns_probe_url: "http://127.0.0.1:8890/cache-count"
+  fallback_dns:
+    - "9.9.9.9"
+    - "1.1.1.1"
+
+killswitch:
+  # true: al conectar la VPN se bloquea todo tráfico que intente salir fuera
+  # del túnel; al desconectar se restaura todo. Solo se activa cuando VOS
+  # conectás desde el panel: apagar el servidor no te deja sin internet
+  # (y siempre está la opción "Restaurar internet" del panel por las dudas).
+  enabled: true
+  # Igual que en SecureProxy: true = solo muestra los comandos sin ejecutarlos
+  # (para ver qué haría), false = los ejecuta de verdad.
+  dry_run: false
+
+logging:
+  db_path: "data/vpn_logs.db"
+
+dashboard:
+  host: "127.0.0.1"
+  port: 8891
+
+lab:
+  compose_file: "docker/docker-compose.lab.yml"
+
+stack:
+  # Dónde escucha SecureProxy, para mostrar su estado en el dashboard y en
+  # "Ver estado" (el de SecureDNS se toma del probe de la sección dns).
+  secureproxy_host: "127.0.0.1"
+  secureproxy_port: 8888

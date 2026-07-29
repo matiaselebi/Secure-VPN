@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # Para la validación cruzada de claves contra `wg pubkey`:
+          sudo apt-get update -qq && sudo apt-get install -y -qq wireguard-tools
+
+      - name: Run unit tests
+        run: pytest tests/ -v
+
+  # El laboratorio completo, de verdad: levanta el contenedor "VPS de
+  # mentira", lo aprovisiona por SSH con el script real, conecta el cliente,
+  # y exige HANDSHAKE + ping a través del túnel cifrado. Si esto pasa,
+  # el proyecto entero funciona de punta a punta.
+  lab-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq wireguard-tools wireguard-go
+
+      - name: Run lab smoke test (provision + handshake + ping por el túnel)
+        run: bash scripts/lab_smoke_test.sh

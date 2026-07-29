@@ -1,0 +1,45 @@
+# El "VPS de mentira" del laboratorio: un Ubuntu con SSH contra el que corre
+# EL MISMO aprovisionamiento que correría contra un VPS real.
+#
+# Por qué la imagen trae los paquetes ya instalados (y antes no):
+# el aprovisionamiento sigue haciendo todo el trabajo de verdad -escribir
+# wg0.conf, activar ip_forward, cargar nftables, configurar fail2ban,
+# levantar el túnel-, pero la parte de "bajar paquetes de internet" en el
+# laboratorio no demuestra nada y en cambio rompe seguido: el contenedor
+# hereda el DNS y el proxy de Windows, y con SecureDNS/SecureProxy
+# encendidos se queda sin resolución de nombres y apt se cuelga.
+# Horneando los paquetes acá, esa descarga pasa UNA sola vez -al construir
+# la imagen- y el encendido de la VPN deja de depender de cómo esté
+# configurada la red de Windows en ese momento.
+# Contra un VPS real no cambia nada: ahí los paquetes no están, el script
+# los detecta faltantes y los instala como siempre.
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && \
+    apt-get install -y -qq \
+        openssh-server \
+        wireguard-tools \
+        wireguard-go \
+        nftables \
+        fail2ban \
+        iproute2 \
+        iptables && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /run/sshd /root/.ssh && \
+    chmod 700 /root/.ssh
+
+# Solo clave pública, jamás contraseña. StrictModes off porque la clave
+# entra por bind-mount desde el host (Windows/macOS pueden montarla con
+# permisos que a sshd no le gustan, y para un laboratorio local alcanza).
+RUN printf '%s\n' \
+    'PermitRootLogin prohibit-password' \
+    'PasswordAuthentication no' \
+    'StrictModes no' \
+    > /etc/ssh/sshd_config.d/securevpn-lab.conf
+
+EXPOSE 22 51820/udp
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]

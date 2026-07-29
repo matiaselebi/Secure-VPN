@@ -1,0 +1,14 @@
+# Entorno virtual
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Datos locales: claves, peers, configs generadas, logs, estado.
+# NADA de esto va a git: acá viven las claves privadas del túnel.
+data/*
+!data/.gitkeep
+
+# Por si alguna config generada queda fuera de data/
+*.conf
+!docker/*.yml
