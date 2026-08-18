@@ -1,14 +1,33 @@
-# Entorno virtual
-venv/
+# Python
 __pycache__/
-*.pyc
-.pytest_cache/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+build/
+dist/
 
-# Datos locales: claves, peers, configs generadas, logs, estado.
-# NADA de esto va a git: acá viven las claves privadas del túnel.
+# Tests y herramientas
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+graphify-out/
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Claves privadas, peers y estado local
 data/*
 !data/.gitkeep
-
-# Por si alguna config generada queda fuera de data/
 *.conf
-!docker/*.yml
+*.log
+
+# Editor y Windows
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
