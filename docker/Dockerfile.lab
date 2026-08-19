@@ -14,7 +14,7 @@
 # Contra un VPS real no cambia nada: ahí los paquetes no están, el script
 # los detecta faltantes y los instala como siempre.
 
-FROM ubuntu:24.04
+FROM ubuntu:25.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 
